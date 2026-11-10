@@ -1,0 +1,8 @@
+.npm-cache/
+.superpowers/
+**/node_modules/
+**/dist/
+**/.env
+**/.env.local
+supabase/.branches/
+supabase/.temp/

@@ -1,0 +1,1 @@
+-- Dữ liệu thử được tạo trong từng bài kiểm thử; không seed tài khoản mặc định.
