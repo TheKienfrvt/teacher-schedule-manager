@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { cachedRead, clearCachedOwner, invalidateCachedGroup, invalidateCachedRead } from './browser-data-cache'
+import { cachedRead, clearCachedOwner, clearOtherCachedOwners, invalidateCachedGroup, invalidateCachedRead } from './browser-data-cache'
 
 beforeEach(() => {
   sessionStorage.clear()
@@ -22,6 +22,20 @@ describe('browser data cache', () => {
     await cachedRead('teacher-a', 'students', async () => [{ name: 'An' }])
     expect(await cachedRead('teacher-b', 'students', async () => [{ name: 'Bình' }])).toEqual([{ name: 'Bình' }])
     expect(sessionStorage.length).toBe(2)
+  })
+
+  it('removes another teacher cache after the current account is verified', async () => {
+    await cachedRead('teacher-a', 'students', async () => ['private A'])
+    await cachedRead('teacher-b', 'students', async () => ['private B'])
+    clearOtherCachedOwners('teacher-b')
+    expect(sessionStorage.getItem('bong:data:v1:teacher-a:students')).toBeNull()
+    expect(sessionStorage.getItem('bong:data:v1:teacher-b:students')).not.toBeNull()
+  })
+
+  it('removes leftover private data when no account is verified', async () => {
+    await cachedRead('teacher-a', 'students', async () => ['private A'])
+    clearOtherCachedOwners(null)
+    expect(sessionStorage.length).toBe(0)
   })
 
   it('refreshes expired data and changed data after invalidation', async () => {
@@ -48,6 +62,19 @@ describe('browser data cache', () => {
     await pending
     expect(sessionStorage.length).toBe(0)
     expect(await cachedRead('teacher-a', 'sessions', async () => ['fresh'])).toEqual(['fresh'])
+  })
+
+  it('keeps API reads working when browser storage refuses access', async () => {
+    const read = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked') })
+    const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked') })
+    const remove = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => { throw new Error('blocked') })
+    try {
+      expect(await cachedRead('teacher-a', 'students', async () => ['An'])).toEqual(['An'])
+      expect(() => invalidateCachedRead('teacher-a', 'students')).not.toThrow()
+      expect(() => clearCachedOwner('teacher-a')).not.toThrow()
+    } finally {
+      read.mockRestore(); write.mockRestore(); remove.mockRestore()
+    }
   })
 
   it('coalesces simultaneous reads and does not cache errors', async () => {

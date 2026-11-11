@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { validateStudentDraft } from './student-form'
 import { supabaseStudents, type StudentRecord, type StudentsGateway } from './students-gateway'
 
@@ -6,6 +6,13 @@ function todayInVietnam() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 }
 const money = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 })
+
+function currentRateLabel(student: StudentRecord, date: string) {
+  const rate = student.rates
+    .filter((item) => item.effectiveFrom <= date)
+    .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0]
+  return rate ? money.format(rate.rateVndPerHour) : 'Chưa có giá hiệu lực'
+}
 
 export function StudentsPage({ gateway = supabaseStudents }: { gateway?: StudentsGateway }) {
   const [students, setStudents] = useState<StudentRecord[]>([])
@@ -19,13 +26,14 @@ export function StudentsPage({ gateway = supabaseStudents }: { gateway?: Student
   const [rate, setRate] = useState('')
   const [effectiveFrom, setEffectiveFrom] = useState(todayInVietnam())
   const [busy, setBusy] = useState(false)
+  const today = todayInVietnam()
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try { setStudents(await gateway.list()); setError(null) }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Không tải được học sinh') }
     finally { setLoading(false) }
-  }
-  useEffect(() => { void refresh() }, [gateway])
+  }, [gateway])
+  useEffect(() => { void Promise.resolve().then(refresh) }, [refresh])
 
   function startNew() {
     setForm('new'); setRateFor(null); setName(''); setContact(''); setNotes(''); setRate(''); setEffectiveFrom(todayInVietnam()); setError(null)
@@ -82,7 +90,7 @@ export function StudentsPage({ gateway = supabaseStudents }: { gateway?: Student
     </form>}
     {loading ? <p role="status">Đang tải học sinh…</p> : students.length === 0 ? <section className="content-card empty-state"><div className="empty-illustration" aria-hidden="true">♡</div><h2>Chưa có học sinh nào</h2><p>Thêm học sinh đầu tiên để bắt đầu lên lịch.</p></section> : <div className="student-grid">{students.map((student) => <article className="content-card student-card" key={student.id}>
       <h2>{student.name}</h2><p>{student.contact || 'Chưa có liên hệ'}</p>
-      <strong>{student.rates[0] ? money.format(student.rates[0].rateVndPerHour) : 'Chưa có giá'}/giờ</strong>
+      <strong>{currentRateLabel(student, today)}/giờ</strong>
       <div className="student-actions"><button type="button" onClick={() => startEdit(student)}>Sửa hồ sơ</button><button type="button" onClick={() => startRate(student)}>Thêm giá</button></div>
       <details><summary>Lịch sử đơn giá</summary><ul>{student.rates.map((item) => <li key={item.id}>{new Date(`${item.effectiveFrom}T00:00:00Z`).toLocaleDateString('vi-VN', { timeZone: 'UTC' })}: {money.format(item.rateVndPerHour)}/giờ</li>)}</ul></details>
     </article>)}</div>}

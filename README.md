@@ -18,10 +18,16 @@ npm run dev
 
 Khi Supabase local đã được khởi động, lấy `anon key` bằng `npx supabase status` và thay giá trị mẫu trong `web/.env.local`. Chỉ khóa công khai được phép đưa vào frontend; không ghi service role key vào file này.
 
+Lưu `web/.env.local` dạng UTF-8 không BOM để Vite nhận đúng biến `VITE_SUPABASE_URL` ở dòng đầu. Sau khi sửa file môi trường, khởi động lại Vite.
+
 ```powershell
 cd web
 npm test
 npm run build
 ```
 
-Giai đoạn 1 đang được triển khai. Giao diện đã nối Auth, học sinh/đơn giá và lịch dự kiến với Supabase local. Chưa nghiệm thu toàn bộ luồng hoặc có chức năng chốt học phí, thanh toán và xuất báo cáo. Xem [review tiến độ](.codex/TASKS.md) và [lỗi còn lại](.codex/PROGRESS.md).
+Khi Supabase local và Vite đang chạy, có thể kiểm tra luồng thật bằng `node scripts/smoke-local-auth.mjs` và `node scripts/smoke-local-browser.mjs` từ thư mục gốc. Script trình duyệt dùng Chrome trên Windows, tạo dữ liệu thử, chụp ảnh vào `docs/previews/` rồi dọn tài khoản thử.
+
+Giai đoạn 1 đã được kiểm tra đầu cuối trên Supabase local và Chrome desktop/mobile 390px. Chưa phát hành hoặc có chức năng chốt học phí, thanh toán và xuất báo cáo; giai đoạn 2 chờ người dùng duyệt. Xem [review tiến độ](.codex/TASKS.md) và [bằng chứng kiểm tra](.codex/PROGRESS.md).
+
+Danh sách học sinh và lịch đang xem được cache trong `sessionStorage` của tab trong 5 phút để giảm lượt gọi API. Cache được xóa khi đăng xuất hoặc tài khoản không còn được xác minh, và được làm mới sau thao tác ghi. Phân quyền dữ liệu nằm ở RLS của Supabase, không dựa vào cache. Không đưa `service_role` key hoặc dữ liệu bí mật vào bản build web.

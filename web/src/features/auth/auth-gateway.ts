@@ -17,8 +17,20 @@ export const supabaseAuth: AuthGateway = {
   subscribe(onChange) {
     const client = getSupabase()
     if (!client) return () => {}
-    const { data } = client.auth.onAuthStateChange((_event, session) => onChange(session?.user.id ?? null))
-    return () => data.subscription.unsubscribe()
+    const timers = new Set<ReturnType<typeof setTimeout>>()
+    const { data } = client.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return
+      const id = session?.user.id ?? null
+      const timer = setTimeout(() => {
+        timers.delete(timer)
+        onChange(id)
+      }, 0)
+      timers.add(timer)
+    })
+    return () => {
+      for (const timer of timers) clearTimeout(timer)
+      data.subscription.unsubscribe()
+    }
   },
   async signIn(email, password) {
     const client = getSupabase()

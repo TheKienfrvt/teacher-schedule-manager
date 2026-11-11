@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { createPlannedInterval, formatVietnamTime } from '../sessions/session-time'
 import { supabaseSessions, type SessionDraft, type SessionRecord, type SessionsGateway } from '../sessions/sessions-gateway'
 import { supabaseStudents, type StudentRecord, type StudentsGateway } from '../students/students-gateway'
 import { findOverlaps } from './overlap'
+import { AttendancePanel } from '../attendance/AttendancePanel'
+import type { AttendanceGateway } from '../attendance/attendance-gateway'
 
 type View = 'day' | 'week' | 'month'
 const vietnamDate = (instant: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(instant))
@@ -24,8 +26,24 @@ function visible(date: string, view: View, start: string) {
   if (view === 'week') return start >= weekStart(date) && start < shift(weekStart(date), 7)
   return start.slice(0, 7) === date.slice(0, 7)
 }
+const weekdayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+function overviewDays(date: string, view: View) {
+  if (view === 'week') return Array.from({ length: 7 }, (_, index) => shift(weekStart(date), index))
+  const first = `${date.slice(0, 7)}-01`
+  const next = new Date(`${first}T00:00:00Z`)
+  next.setUTCMonth(next.getUTCMonth() + 1)
+  const last = shift(next.toISOString().slice(0, 10), -1)
+  const start = weekStart(first)
+  const count = Math.ceil((Math.round((Date.parse(`${last}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000) + 1) / 7) * 7
+  return Array.from({ length: count }, (_, index) => shift(start, index))
+}
+function periodLabel(date: string, view: View) {
+  if (view === 'month') return `Tháng ${date.slice(5, 7)}/${date.slice(0, 4)}`
+  const start = weekStart(date)
+  return `Tuần ${start.slice(8, 10)}/${start.slice(5, 7)} – ${shift(start, 6).split('-').reverse().join('/')}`
+}
 
-export function CalendarPage({ sessions = supabaseSessions, students = supabaseStudents, initialDate }: { sessions?: SessionsGateway, students?: StudentsGateway, initialDate?: string }) {
+export function CalendarPage({ sessions = supabaseSessions, students = supabaseStudents, attendance, initialDate }: { sessions?: SessionsGateway, students?: StudentsGateway, attendance?: AttendanceGateway, initialDate?: string }) {
   const [items, setItems] = useState<SessionRecord[]>([])
   const [studentList, setStudentList] = useState<StudentRecord[]>([])
   const [date, setDate] = useState(initialDate ?? today())
@@ -45,24 +63,44 @@ export function CalendarPage({ sessions = supabaseSessions, students = supabaseS
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [overlapNames, setOverlapNames] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
-  const visibleWindow = useMemo(() => rangeFor(date, view), [date, view])
+  const periodKey = view === 'week' ? weekStart(date) : view === 'month' ? date.slice(0, 7) : date
+  const visibleWindow = useMemo(() => rangeFor(periodKey, view), [periodKey, view])
+  const activeWindow = useRef(visibleWindow)
+  const requestVersion = useRef(0)
 
   const refresh = useCallback(async () => {
+    if (activeWindow.current !== visibleWindow) return
+    const version = ++requestVersion.current
+    setLoading(true)
     try {
       const [loadedSessions, loadedStudents] = await Promise.all([sessions.list(visibleWindow), students.list()])
-      setItems(loadedSessions); setStudentList(loadedStudents); setError(null)
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không tải được lịch học') }
-    finally { setLoading(false) }
+      if (version === requestVersion.current && activeWindow.current === visibleWindow) {
+        setItems(loadedSessions); setStudentList(loadedStudents); setError(null)
+      }
+    } catch (cause) {
+      if (version === requestVersion.current && activeWindow.current === visibleWindow) setError(cause instanceof Error ? cause.message : 'Không tải được lịch học')
+    } finally {
+      if (version === requestVersion.current && activeWindow.current === visibleWindow) setLoading(false)
+    }
   }, [sessions, students, visibleWindow])
-  useEffect(() => { void refresh() }, [refresh])
+  useEffect(() => {
+    activeWindow.current = visibleWindow
+    const versionGuard = requestVersion
+    let active = true
+    void Promise.resolve().then(() => { if (active) return refresh() })
+    return () => { active = false; versionGuard.current++ }
+  }, [refresh, visibleWindow])
 
   const names = useMemo(() => new Map(studentList.map((student) => [student.id, student.name])), [studentList])
   const shown = items.filter((item) => visible(date, view, vietnamDate(item.startAt)) && (!studentFilter || item.studentIds.includes(studentFilter)))
+    .sort((a, b) => a.startAt.localeCompare(b.startAt))
   const groups = shown.reduce<Record<string, SessionRecord[]>>((result, item) => {
     const key = vietnamDate(item.startAt)
     ;(result[key] ??= []).push(item)
     return result
   }, {})
+  const days = view === 'day' ? [] : overviewDays(date, view)
+  const selectedItems = groups[date] ?? []
   const plannedEnd = (() => { try { return formatVietnamTime(createPlannedInterval(formDate, time, Number(minutes)).endAt) } catch { return '—' } })()
 
   function openNew() {
@@ -75,6 +113,13 @@ export function CalendarPage({ sessions = supabaseSessions, students = supabaseS
     setSelectedIds(item.studentIds); setOverlapNames([]); setError(null); setFormOpen(true)
   }
   function toggleStudent(id: string) { setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]) }
+  function movePeriod(direction: -1 | 1) {
+    if (view === 'day') { setDate(shift(date, direction)); return }
+    if (view === 'week') { setDate(shift(date, direction * 7)); return }
+    const next = new Date(`${date.slice(0, 7)}-01T00:00:00Z`)
+    next.setUTCMonth(next.getUTCMonth() + direction)
+    setDate(next.toISOString().slice(0, 10))
+  }
 
   function buildDraft(): SessionDraft {
     if (selectedIds.length === 0) throw new Error('Chọn ít nhất một học sinh')
@@ -112,6 +157,25 @@ export function CalendarPage({ sessions = supabaseSessions, students = supabaseS
     finally { setBusy(false) }
   }
 
+  function sessionCard(item: SessionRecord) {
+    const endAt = new Date(new Date(item.startAt).getTime() + item.minutes * 60_000).toISOString()
+    const scheduled = item.statuses.every((status) => status === 'scheduled')
+    return <article className="content-card session-card" key={item.id}>
+      <div>
+        <strong>{formatVietnamTime(item.startAt)}–{formatVietnamTime(endAt)}</strong>
+        <h3>{item.studentIds.map((id) => names.get(id) ?? 'Học sinh đã ẩn').join(', ')}</h3>
+        <p>{item.mode === 'online' ? 'Online' : 'Trực tiếp'} · {item.minutes} phút{item.location ? ` · ${item.location}` : ''}</p>
+        {item.meetingUrl && <p>Link học: {item.meetingUrl}</p>}
+        {item.notes && <p>{item.notes}</p>}
+        {scheduled && <p className="session-status">Dự kiến · 0đ{item.studentIds.length > 1 ? ' · Học nhóm' : ''}</p>}
+      </div>
+      {scheduled && <div className="student-actions"><button type="button" onClick={() => openEdit(item)}>Sửa</button><button type="button" disabled={busy} onClick={() => void remove(item)}>Xóa</button></div>}
+      {attendance && <AttendancePanel sessionId={item.id} plannedStartAt={item.startAt} plannedMinutes={item.minutes}
+        students={item.studentIds.map((id) => ({ id, name: names.get(id) ?? 'Học sinh đã ẩn' }))}
+        gateway={attendance} onChanged={refresh} />}
+    </article>
+  }
+
   return <>
     <header className="page-header"><div><p className="eyebrow">GÓC LỊCH NHỎ</p><h1>Lịch học</h1><p className="page-description">Ghi lịch cho từng em hoặc một nhóm; lịch dự kiến chưa phát sinh học phí.</p></div><button type="button" className="primary-button" onClick={openNew}>+ Thêm lịch</button></header>
     {error && <p role="alert" className="form-error">{error}</p>}
@@ -128,7 +192,41 @@ export function CalendarPage({ sessions = supabaseSessions, students = supabaseS
       {overlapNames.length > 0 && <div role="alert" className="overlap-warning"><strong>Trùng giờ với:</strong><ul>{overlapNames.map((name) => <li key={name}>{name}</li>)}</ul><button type="button" onClick={() => void save(true)} disabled={busy}>Vẫn lưu lịch</button></div>}
       <div className="form-actions"><button type="button" onClick={() => setFormOpen(false)}>Hủy</button><button type="submit" className="primary-button" disabled={busy || studentList.length === 0}>Lưu lịch</button></div>
     </form>}
-    <div className="calendar-controls"><div className="view-switch" role="group" aria-label="Chế độ xem">{(['day','week','month'] as View[]).map((item) => <button type="button" className={view === item ? 'selected' : ''} key={item} onClick={() => setView(item)}>{item === 'day' ? 'Ngày' : item === 'week' ? 'Tuần' : 'Tháng'}</button>)}</div><label>Ngày xem<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><label>Lọc học sinh<select value={studentFilter} onChange={(event) => setStudentFilter(event.target.value)}><option value="">Tất cả</option>{studentList.map((student) => <option value={student.id} key={student.id}>{student.name}</option>)}</select></label></div>
-    {loading ? <p role="status">Đang tải lịch…</p> : shown.length === 0 ? <section className="content-card empty-state"><div className="empty-illustration" aria-hidden="true">✿</div><h2>Chưa có lịch học nào</h2><p>Chọn “Thêm lịch” để ghi buổi học đầu tiên.</p></section> : <div className="calendar-groups">{Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([groupDate, dayItems]) => <section key={groupDate}><h2>{labelDate(groupDate)}</h2><div className="session-list">{dayItems?.map((item) => <article className="content-card session-card" key={item.id}><div><strong>{formatVietnamTime(item.startAt)}–{formatVietnamTime(new Date(new Date(item.startAt).getTime() + item.minutes * 60_000).toISOString())}</strong><h3>{item.studentIds.map((id) => names.get(id) ?? 'Học sinh đã ẩn').join(', ')}</h3><p>{item.mode === 'online' ? 'Online' : 'Trực tiếp'} · {item.minutes} phút{item.location ? ` · ${item.location}` : ''}</p>{item.notes && <p>{item.notes}</p>}</div>{item.statuses.every((status) => status === 'scheduled') && <div className="student-actions"><button type="button" onClick={() => openEdit(item)}>Sửa</button><button type="button" disabled={busy} onClick={() => void remove(item)}>Xóa</button></div>}</article>)}</div></section>)}</div>}
+    <div className="calendar-controls">
+      <div className="view-switch" role="group" aria-label="Chế độ xem">{(['day','week','month'] as View[]).map((item) => <button type="button" className={view === item ? 'selected' : ''} key={item} onClick={() => setView(item)} aria-pressed={view === item}>{item === 'day' ? 'Ngày' : item === 'week' ? 'Tuần' : 'Tháng'}</button>)}</div>
+      <label>Ngày xem<input type="date" value={date} onChange={(event) => { if (event.target.value) setDate(event.target.value) }} /></label>
+      <label>Lọc học sinh<select value={studentFilter} onChange={(event) => setStudentFilter(event.target.value)}><option value="">Tất cả</option>{studentList.map((student) => <option value={student.id} key={student.id}>{student.name}</option>)}</select></label>
+    </div>
+    <div className="period-navigation" aria-label="Chuyển khoảng xem">
+      <button type="button" onClick={() => movePeriod(-1)} aria-label={view === 'month' ? 'Tháng trước' : view === 'week' ? 'Tuần trước' : 'Ngày trước'}>‹</button>
+      <strong>{view === 'day' ? labelDate(date) : periodLabel(date, view)}</strong>
+      <button type="button" onClick={() => movePeriod(1)} aria-label={view === 'month' ? 'Tháng sau' : view === 'week' ? 'Tuần sau' : 'Ngày sau'}>›</button>
+    </div>
+    {view !== 'day' && <section className={`calendar-overview ${view}`} aria-label={view === 'month' ? 'Các ngày trong tháng' : 'Các ngày trong tuần'}>
+      {view === 'month' && weekdayLabels.map((label) => <span className="calendar-weekday" key={label}>{label}</span>)}
+      {days.map((day, index) => {
+        if (view === 'month' && day.slice(0, 7) !== date.slice(0, 7)) return <span className="calendar-day outside" aria-hidden="true" key={day} />
+        const dayItems = groups[day] ?? []
+        const people = [...new Set(dayItems.flatMap((item) => item.studentIds.map((id) => names.get(id) ?? 'Học sinh đã ẩn')))]
+        return <button className={`calendar-day${day === date ? ' selected' : ''}${dayItems.length ? ' has-lessons' : ''}`} type="button" key={day}
+          onClick={() => setDate(day)} aria-pressed={day === date}
+          aria-label={`${labelDate(day)}: ${dayItems.length} buổi${people.length ? `; ${people.join(', ')}` : ''}`}>
+          <span className="calendar-day-date">{view === 'week' ? `${weekdayLabels[index]} · ${day.slice(8, 10)}/${day.slice(5, 7)}` : Number(day.slice(8, 10))}</span>
+          {dayItems.length > 0 && <><span className="calendar-day-count">{dayItems.length} buổi</span>
+            <span className="calendar-day-preview">{dayItems.slice(0, 2).map((item) => <span key={item.id}>{formatVietnamTime(item.startAt)} · {item.studentIds.map((id) => names.get(id) ?? 'Học sinh đã ẩn').join(', ')}</span>)}{dayItems.length > 2 && <span>+{dayItems.length - 2} buổi nữa</span>}</span></>}
+        </button>
+      })}
+    </section>}
+    {view === 'month' && Object.keys(groups).length > 0 && <section className="month-agenda" aria-label="Lịch học trong tháng">
+      <h2>Ngày có lịch trong tháng</h2>
+      {Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([day, dayItems]) => <button type="button" key={day} onClick={() => setDate(day)} aria-pressed={day === date}>
+        <strong>{labelDate(day)} · {dayItems.length} buổi</strong>
+        {dayItems.map((item) => <span key={item.id}>{formatVietnamTime(item.startAt)} · {item.studentIds.map((id) => names.get(id) ?? 'Học sinh đã ẩn').join(', ')}</span>)}
+      </button>)}
+    </section>}
+    <section className="day-details" aria-labelledby="selected-day-title">
+      <h2 id="selected-day-title">Chi tiết {labelDate(date)}</h2>
+      {loading ? <p role="status">Đang tải lịch…</p> : selectedItems.length === 0 ? <p className="content-card no-lessons">Ngày này chưa có lịch học.</p> : <div className="session-list">{selectedItems.map(sessionCard)}</div>}
+    </section>
   </>
 }

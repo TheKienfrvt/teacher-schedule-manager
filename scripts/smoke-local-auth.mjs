@@ -40,8 +40,29 @@ try {
   if (aStudents.length !== 1 || aStudents[0].name !== 'An smoke' || bStudents.length !== 0) throw new Error('RLS không cô lập giáo viên A/B')
   const aRates = await request('/rest/v1/rate_history?select=rate_vnd_per_hour', a.headers)
   if (aRates.length !== 1 || Number(aRates[0].rate_vnd_per_hour) !== 100000) throw new Error('Giá ban đầu không khớp')
+  const updated = await request(`/rest/v1/students?id=eq.${aStudents[0].id}&select=id,name,contact`, a.headers, {
+    method: 'PATCH', headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({ name: 'An đã sửa', contact: 'Phụ huynh An' }),
+  })
+  if (updated.length !== 1 || updated[0].name !== 'An đã sửa') throw new Error('Không sửa được hồ sơ của A')
+  const crossOwnerUpdate = await request(`/rest/v1/students?id=eq.${aStudents[0].id}&select=id`, b.headers, {
+    method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ name: 'B sửa An' }),
+  })
+  if (crossOwnerUpdate.length !== 0) throw new Error('B sửa được hồ sơ của A')
+  await request('/rest/v1/rpc/add_student_rate', a.headers, { method: 'POST', body: JSON.stringify({
+    p_student_id: aStudents[0].id, p_effective_from: '2099-01-01', p_rate_vnd_per_hour: 150000,
+  }) })
+  const rateHistory = await request(`/rest/v1/rate_history?select=effective_from,rate_vnd_per_hour&student_id=eq.${aStudents[0].id}`, a.headers)
+  if (rateHistory.length !== 2) throw new Error('Không lưu được lịch sử giá của An')
+  let duplicateBlocked = false
+  try {
+    await request('/rest/v1/rpc/add_student_rate', a.headers, { method: 'POST', body: JSON.stringify({
+      p_student_id: aStudents[0].id, p_effective_from: '2099-01-01', p_rate_vnd_per_hour: 160000,
+    }) })
+  } catch (error) { duplicateBlocked = String(error).includes('HTTP 409') }
+  if (!duplicateBlocked) throw new Error('Giá trùng ngày không bị chặn')
   const nestedStudents = await request('/rest/v1/students?select=id,name,contact,notes,rate_history(id,effective_from,rate_vnd_per_hour)', a.headers)
-  if (nestedStudents.length !== 1 || nestedStudents[0].rate_history.length !== 1) throw new Error('Truy vấn học sinh kèm giá không đúng')
+  if (nestedStudents.length !== 1 || nestedStudents[0].name !== 'An đã sửa' || nestedStudents[0].rate_history.length !== 2) throw new Error('Truy vấn học sinh kèm giá không đúng')
   const second = await request('/rest/v1/rpc/create_student', a.headers, { method: 'POST', body: JSON.stringify({
     p_name: 'Bình smoke', p_contact: null, p_notes: null, p_effective_from: '2026-11-01', p_rate_vnd_per_hour: 120000,
   }) })
@@ -76,9 +97,11 @@ try {
   const deleted = await request(`/rest/v1/sessions?select=deleted_at&id=eq.${session}`, a.headers)
   const audit = await request(`/rest/v1/audit_events?select=action&entity_id=eq.${session}`, a.headers)
   if (!deleted[0]?.deleted_at || audit.length !== 3) throw new Error('Xóa mềm hoặc audit lịch không đúng')
-  console.log('PASS: đăng nhập A/B, RLS, hồ sơ/giá, lịch nhóm 0đ, sửa, xóa mềm và audit.')
+  console.log('PASS: đăng nhập A/B, RLS, sửa hồ sơ, lịch sử giá, lịch nhóm 0đ, sửa, xóa mềm, audit và dọn tài khoản thử.')
 } finally {
   const cleanup = await Promise.allSettled(ids.map((id) => request(`/auth/v1/admin/users/${id}`, adminHeaders, { method: 'DELETE' })))
   const failures = cleanup.filter((result) => result.status === 'rejected')
   if (failures.length) throw new Error(`Không dọn được tài khoản thử: ${failures.map((result) => String(result.reason)).join('; ')}`)
+  const remaining = await request('/auth/v1/admin/users?per_page=1000', adminHeaders)
+  if (remaining.users.some((user) => ids.includes(user.id))) throw new Error('Tài khoản thử vẫn còn sau khi dọn')
 }

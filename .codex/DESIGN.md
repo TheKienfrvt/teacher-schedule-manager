@@ -1,10 +1,12 @@
 # DESIGN — Định hướng giao diện
 
-**Trạng thái:** Bản thiết kế nền để review, chưa có màn hình được lập trình · **Nguồn:** [PRD.md](PRD.md)
+**Trạng thái:** Bản thiết kế nền; giao diện giai đoạn 1 đang được triển khai và kiểm tra · **Nguồn:** [PRD.md](PRD.md)
 
 ## 1. Phong cách
 
 Giao diện mang cảm giác **một món quà dành tặng bạn gái**: hồng pastel dịu, mềm mại, dễ thương và ấm áp. Thẻ bo tròn, khoảng trắng thoáng, icon nét tròn và chi tiết trang trí nhỏ tạo nét riêng; giờ học và học phí vẫn phải dễ đọc trên điện thoại. Trang trí dùng tiết chế ở tiêu đề hoặc trạng thái trống, không đặt sát số tiền hay trong biểu mẫu quan trọng. Màu trạng thái luôn đi kèm chữ hoặc biểu tượng. Văn bản dùng tiếng Việt; ngày `dd/mm/yyyy`, giờ 24 giờ, tiền định dạng `100.000đ`.
+
+Theo yêu cầu cập nhật ngày 10/11/2026, giao diện ưu tiên trạng thái tĩnh: không dùng animation, transition, hiệu ứng chuyển động hoặc hình trang trí xoay. Thay đổi trạng thái phải nhận biết được qua chữ, màu và focus rõ ràng.
 
 ## 2. Màu sắc và chữ
 
@@ -61,7 +63,7 @@ Danh sách có tìm kiếm, tên, đơn giá hiện hành, số buổi tháng n�
 
 ### Lịch học
 
-Có chế độ ngày/tuần/tháng. Mục lịch nhóm có dấu nhấn lavender và nhiều tên trong cùng thẻ; các mục riêng trùng giờ hiện cạnh nhau hoặc xếp theo hàng, **không tự gộp**. Bấm mục lịch mở chi tiết; nút hồng rose “Thêm lịch” luôn dễ tìm. Trạng thái “Dự kiến” màu hồng phấn và “Đã học” màu sage, đều có nhãn chữ.
+Có chế độ ngày/tuần/tháng. Tuần và tháng hiển thị ngày có lịch, số buổi, giờ và tên học sinh; bấm một ngày để xem các buổi cùng giờ bắt đầu/kết thúc, hình thức, địa điểm/link và ghi chú. Lịch tháng trên điện thoại có danh sách ngày học với giờ và tên đầy đủ bên dưới lưới ngày. Mục lịch nhóm có nhiều tên trong cùng thẻ; các mục riêng trùng giờ hiển thị riêng, **không tự gộp**. Nút hồng rose “Thêm lịch” luôn dễ tìm. Trạng thái “Dự kiến” có nhãn chữ và chưa tính tiền.
 
 ### Thêm/Sửa mục lịch
 

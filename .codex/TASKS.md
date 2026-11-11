@@ -2,20 +2,28 @@
 
 **Quy ước:** `[ ]` chưa nghiệm thu, `[x]` đã nghiệm thu và có bằng chứng trong [PROGRESS.md](PROGRESS.md). Mỗi task ghi kết quả có thể xem, cách kiểm tra và phụ thuộc. Trạng thái mã và kiểm thử cập nhật tại [PROGRESS.md](PROGRESS.md); chưa có bản phát hành.
 
-## Review tiến độ — 10/11/2026
+## Review giai đoạn 1 — 11/11/2026
 
-**Tỷ lệ nghiệm thu giai đoạn 1–4: 1/20 task = 5%.** Đây là tỷ lệ theo dấu `[x]`, không phải tỷ lệ dòng mã đã viết. Giai đoạn 0 đã xong 3/3; nếu tính cả giai đoạn 0 thì 4/23 task = 17,4%. Không đánh dấu thêm task chỉ vì đã có giao diện hoặc logic mẫu.
+**Đã nghiệm thu 7/20 task giai đoạn 1–4 = 35%**; nếu tính cả giai đoạn 0 là 10/23 = 43,5%. Toàn bộ T-01.1–T-01.7 đã đạt tiêu chí local: đăng nhập/đăng xuất, học sinh và giá riêng, lịch nhóm, cảnh báo trùng vẫn lưu, sửa/xóa mềm có audit, lịch dự kiến 0đ. Browser smoke chạy thao tác ghi trên desktop và viewport mobile 390px bằng tài khoản thử tự dọn; giao diện mobile không tràn ngang và nút Lưu không bị thanh điều hướng che. Frontend **53/53 test qua**, lint sạch, build qua; SQL/RLS **67/67 qua**; smoke API và browser đều qua. [Bằng chứng và giới hạn](PROGRESS.md).
+
+**Cổng duyệt:** Dừng trước giai đoạn 2. Cần người dùng đồng ý sau khi đọc review này để bắt đầu chức năng chốt buổi và học phí. Chưa thử trên điện thoại vật lý, chưa triển khai HTTPS/CSP/backup cho dữ liệu thật; những việc đó nằm ở giai đoạn phát hành và sao lưu.
+
+## Review tiến độ — 10/11/2026 (mốc lịch sử trước nghiệm thu)
+
+**Bổ sung review bảo mật/hiệu năng — 10/11/2026:** Đã xác minh người dùng bằng Supabase Auth trước khi mở trang riêng; RLS A/B và dọn tài khoản có lịch qua kiểm thử local. Danh sách học sinh và lịch được cache trong `sessionStorage` theo tài khoản, tự hết hạn sau 5 phút, xóa khi đăng xuất/không xác minh được tài khoản/đổi tài khoản và vô hiệu sau thao tác ghi; khi storage bị chặn, app vẫn đọc API bình thường. Truy vấn học sinh/giá gộp một lượt; lịch chỉ tải khoảng ngày/tuần/tháng đang xem, có chỉ mục hỗ trợ. Giao diện hiện không dùng animation, transition hay transform trang trí. Frontend **52/52 test qua**, lint sạch, build qua; SQL local **67/67 qua** và smoke Auth/RLS/API chạy lại thành công. Đã kiểm tra lịch/học sinh trên Chrome desktop và viewport mobile 390px. Vẫn cần thử thao tác ghi UI đầu cuối, kiểm tra bảo mật khi triển khai HTTPS/CSP, dữ liệu lớn và backup trước khi dùng dữ liệu thật. Chi tiết ở [PROGRESS.md](PROGRESS.md).
+
+**Tỷ lệ nghiệm thu giai đoạn 1–4: 3/20 task = 15%.** Đây là tỷ lệ theo dấu `[x]`, không phải tỷ lệ dòng mã đã viết. Giai đoạn 0 đã xong 3/3; nếu tính cả giai đoạn 0 thì 6/23 task = 26,1%. T-01.1 và T-01.3 đã có bằng chứng trình duyệt local trên desktop/mobile; các task học sinh và lịch còn chờ thao tác ghi đầu cuối trên trình duyệt.
 
 | Nhóm | Trạng thái qua review | Việc còn lại để nghiệm thu |
 |---|---|---|
-| T-01.1 | Có khung React/Vite, build thành công. | Mở và kiểm tra trực quan trên điện thoại, máy tính; sửa bố cục nếu cần. |
-| T-01.2 | Đã nghiệm thu migration/RLS nền; SQL test gần nhất 60/60. | Sửa lỗi xóa tài khoản thử sau khi đã tạo lịch; chạy lại kiểm thử toàn bộ. |
-| T-01.3 | Có trang đăng nhập, đăng xuất, guard; test component và API Auth A/B đã qua. | Kiểm tra trọn luồng trên trình duyệt với tài khoản thật local trước khi đánh dấu. |
-| T-01.4 | Có trang học sinh, RPC tạo học sinh/giá, lịch sử giá; test đơn giá riêng đã qua. | Kiểm tra sửa hồ sơ/thêm giá qua API và UI; hiển thị đúng giá **đang có hiệu lực** thay vì giá mới nhất trong tương lai. |
-| T-01.5–01.6 | Có form lịch nhóm, RPC tạo/sửa/xóa mềm, chế độ lọc ngày/tuần/tháng và cảnh báo trùng; test UI/API một phần đã qua. | Chạy luồng UI đầu cuối, kiểm tra xóa mềm/audit và chế độ xem trên hai kích thước; xử lý lỗi dọn tài khoản thử. |
+| T-01.1 | Đã nghiệm thu: build qua; ảnh Chrome desktop 1440px/mobile 390px từ app thật, không tràn ngang. | Tiếp tục tinh chỉnh giao diện ở các task nghiệp vụ khi cần. |
+| T-01.2 | Đã nghiệm thu migration/RLS nền; SQL local 67/67 qua, smoke API qua cả dọn tài khoản có lịch. | Kiểm tra lại trên môi trường triển khai trước khi dùng dữ liệu thật. |
+| T-01.3 | Đã nghiệm thu: browser smoke đăng nhập, chỉ xem dữ liệu chủ sở hữu, đăng xuất ẩn trang và xóa cache; RLS A/B qua API. | Kiểm tra lại cấu hình Auth/HTTPS khi triển khai. |
+| T-01.4 | Có trang học sinh, RPC tạo học sinh/giá, lịch sử giá; test UI sửa hồ sơ và giá hiệu lực đã qua. | Kiểm tra trọn luồng qua trình duyệt thật trước khi nghiệm thu. |
+| T-01.5–01.6 | Có form lịch nhóm, RPC tạo/sửa/xóa mềm, lọc ngày/tuần/tháng và cảnh báo trùng; test UI/API và dọn tài khoản có lịch đã qua. | Chạy luồng UI đầu cuối, kiểm tra bố cục và thao tác trên hai kích thước. |
 | T-02–04 | Mới có hàm thuần và test đơn vị cho tiền, giá, tham gia, kỳ tháng, tổng kết. | Chưa có migration/chốt buổi/thanh toán/báo cáo thực tế, XLSX, PDF, sao lưu và thử khôi phục. |
 
-**Thứ tự xử lý sau review:** (1) chẩn đoán và sửa lỗi xóa tài khoản thử có lịch, thêm test hồi quy; (2) hoàn tất kiểm thử đầu cuối và giao diện giai đoạn 1, sửa giá hiệu lực và 4 cảnh báo lint; (3) làm tuần tự giai đoạn 2, 3, 4 theo các task bên dưới. Lần kiểm thử tổng mới nhất bị sandbox chặn `spawn EPERM`; lần chạy với quyền cần thiết bị hệ thống auto-review từ chối vì giới hạn sử dụng, nên không coi đó là test sản phẩm thất bại. Chi tiết ở [PROGRESS.md](PROGRESS.md).
+**Thứ tự xử lý sau review:** (1) hoàn tất kiểm tra trực quan và luồng đầu cuối giai đoạn 1; (2) đo truy vấn với dữ liệu lớn và xử lý giới hạn phân trang nếu phát sinh; (3) sau khi review phase 1 và được người dùng đồng ý, làm tuần tự giai đoạn 2, 3, 4. Lỗi dọn tài khoản, giá hiệu lực và cảnh báo lint đã được xử lý; kết quả mới nhất ở [PROGRESS.md](PROGRESS.md).
 
 ## Kế hoạch chia phiên — đã được duyệt 10/11/2026
 
@@ -31,13 +39,13 @@
 
 ## Giai đoạn 1 — Bản lịch chạy local
 
-- [ ] **T-01.1 — Khởi tạo dự án React/Vite/TypeScript.** Bàn giao app chạy local với layout nền hồng pastel theo `DESIGN.md`, cấu hình môi trường mẫu và hướng dẫn chạy. Kiểm tra: mở trên điện thoại và máy tính, chữ/nút rõ, build thành công. Phụ thuộc: T-00.3.
+- [x] **T-01.1 — Khởi tạo dự án React/Vite/TypeScript.** Bàn giao app chạy local với layout nền hồng pastel theo `DESIGN.md`, cấu hình môi trường mẫu và hướng dẫn chạy. Kiểm tra: mở trên điện thoại và máy tính, chữ/nút rõ, build thành công. Phụ thuộc: T-00.3.
 - [x] **T-01.2 — Thiết kế migration và RLS nền.** Tạo `profiles`, `students`, `rate_history`, `sessions`, `session_students`, `audit_events` với ràng buộc sở hữu. Kiểm tra: tài khoản A không đọc/ghi dữ liệu B; không ghép học sinh B vào buổi A. Phụ thuộc: T-01.1.
-- [ ] **T-01.3 — Đăng nhập chỉ cho giáo viên.** Bàn giao màn hình đăng nhập, đăng xuất, chặn trang riêng khi chưa đăng nhập. Kiểm tra: người chưa đăng nhập không thấy dữ liệu; sau đăng nhập thấy đúng dữ liệu mình. Phụ thuộc: T-01.2.
-- [ ] **T-01.4 — Quản lý học sinh và đơn giá.** Tạo/sửa hồ sơ, giá VND/giờ và ngày hiệu lực, xem lịch sử. Kiểm tra: An 100.000đ/giờ, Bình 120.000đ/giờ hiển thị tách biệt; giá không âm. Phụ thuộc: T-01.3.
-- [ ] **T-01.5 — Tạo/sửa/xóa ghi chú lịch.** Chọn một hoặc nhiều học sinh, ngày/giờ, 30/60/90/120 phút hoặc nhập phút khác, hình thức và địa điểm/link. Xóa mềm lịch chưa chốt. Kiểm tra: An+Bình 18:00–19:30 nằm trong một mục; sửa thành 19:00; xóa thì không còn ở lịch thường nhưng còn dấu vết. Phụ thuộc: T-01.4.
-- [ ] **T-01.6 — Lịch ngày/tuần/tháng và cảnh báo trùng.** Hiển thị lịch nhóm và mục riêng; cảnh báo trùng không chặn. Kiểm tra: thêm mục 18:30–19:30 khi đã có 18:00–19:00, thấy cảnh báo đúng khoảng giờ và vẫn lưu được. Phụ thuộc: T-01.5.
-- [ ] **T-01.7 — Review giai đoạn 1.** Kiểm tra luồng từ đăng nhập đến quản lý lịch trên điện thoại/máy tính; kiểm thử RLS, trạng thái lịch 0đ và giao diện hồng pastel dễ đọc theo `DESIGN.md`. Ghi lỗi và kết quả trong `PROGRESS.md`. Phụ thuộc: T-01.1 đến T-01.6.
+- [x] **T-01.3 — Đăng nhập chỉ cho giáo viên.** Bàn giao màn hình đăng nhập, đăng xuất, chặn trang riêng khi chưa đăng nhập. Kiểm tra: người chưa đăng nhập không thấy dữ liệu; sau đăng nhập thấy đúng dữ liệu mình. Phụ thuộc: T-01.2.
+- [x] **T-01.4 — Quản lý học sinh và đơn giá.** Tạo/sửa hồ sơ, giá VND/giờ và ngày hiệu lực, xem lịch sử. Kiểm tra: An 100.000đ/giờ, Bình 120.000đ/giờ hiển thị tách biệt; giá không âm. Phụ thuộc: T-01.3.
+- [x] **T-01.5 — Tạo/sửa/xóa ghi chú lịch.** Chọn một hoặc nhiều học sinh, ngày/giờ, 30/60/90/120 phút hoặc nhập phút khác, hình thức và địa điểm/link. Xóa mềm lịch chưa chốt. Kiểm tra: An+Bình 18:00–19:30 nằm trong một mục; sửa thành 19:00; xóa thì không còn ở lịch thường nhưng còn dấu vết. Phụ thuộc: T-01.4.
+- [x] **T-01.6 — Lịch ngày/tuần/tháng và cảnh báo trùng.** Hiển thị lịch nhóm và mục riêng; cảnh báo trùng không chặn. Lịch tuần/tháng có ô ngày, số buổi, giờ và tên học sinh; chọn ngày để xem giờ bắt đầu/kết thúc, học sinh, hình thức, địa điểm/link và ghi chú. Trên điện thoại, lịch tháng có thêm danh sách ngày học kèm giờ và tên đầy đủ. Kiểm tra: thêm mục 18:30–19:30 khi đã có 18:00–19:00, thấy cảnh báo đúng khoảng giờ và vẫn lưu được; chọn ngày khác trong cùng tuần/tháng không gọi lại API. Phụ thuộc: T-01.5.
+- [x] **T-01.7 — Review giai đoạn 1.** Kiểm tra luồng từ đăng nhập đến quản lý lịch trên điện thoại/máy tính; kiểm thử RLS, trạng thái lịch 0đ và giao diện hồng pastel dễ đọc theo `DESIGN.md`. Ghi lỗi và kết quả trong `PROGRESS.md`. Phụ thuộc: T-01.1 đến T-01.6.
 
 **Bàn giao giai đoạn 1:** App chạy local và dữ liệu thử, chỉ giáo viên thao tác; học phí tháng và xuất file chưa có.
 

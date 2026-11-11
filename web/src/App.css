@@ -66,13 +66,41 @@ h2 { margin: 0; }
 .view-switch { display: flex; background: #f8dce8; border-radius: 999px; padding: 3px; }
 .view-switch button { border: 0; background: transparent; border-radius: 999px; padding: 10px 14px; color: #744e60; }
 .view-switch button.selected { background: white; color: #883052; font-weight: 700; }
+.period-navigation { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 22px 0 18px; color: #3d2d37; }
+.period-navigation strong { min-width: 210px; text-align: center; }
+.period-navigation button { width: 38px; height: 38px; border: 1px solid #eed8e2; border-radius: 12px; background: white; color: #883052; font-size: 26px; line-height: 1; }
+.calendar-overview { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.calendar-weekday { text-align: center; color: #744e60; font-size: 12px; font-weight: 700; padding: 6px; }
+.calendar-day { min-width: 0; min-height: 132px; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; text-align: left; padding: 12px; border: 1px solid #eed8e2; border-radius: 14px; background: white; color: #3d2d37; }
+.calendar-day.has-lessons { background: #fffafd; }
+.calendar-day.selected { border: 2px solid #a04368; background: #fff0f6; padding: 11px; }
+.calendar-day.outside { border: 0; background: transparent; }
+.calendar-day-date { font-weight: 700; }
+.calendar-day-count { color: #883052; font-size: 12px; font-weight: 700; }
+.calendar-day-preview { min-width: 0; max-width: 100%; display: grid; gap: 4px; color: #744e60; font-size: 12px; }
+.calendar-day-preview span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.month-agenda { display: none; }
+.day-details { margin-top: 30px; }
+.day-details h2 { margin-bottom: 14px; font-size: 20px; }
+.no-lessons { padding: 28px; color: #744e60; }
 .calendar-groups { display: grid; gap: 24px; }
 .calendar-groups h2 { margin-bottom: 12px; font-size: 19px; }
 .session-list { display: grid; gap: 12px; }
-.session-card { padding: 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.session-card { padding: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; }
 .session-card strong { color: #883052; }
 .session-card h3 { margin: 5px 0; }
 .session-card p { color: #744e60; margin: 4px 0; }
+.session-card .session-status { color: #883052; font-weight: 700; margin-top: 10px; }
+.attendance-panel { flex-basis: 100%; border-top: 1px solid #eed8e2; padding-top: 12px; }
+.attendance-panel button { border: 1px solid #e7bbce; border-radius: 999px; background: #fff7fa; color: #883052; padding: 9px 16px; font-weight: 600; }
+.attendance-panel button:disabled { opacity: .6; }
+.attendance-content { display: grid; gap: 14px; margin-top: 14px; }
+.attendance-student { min-width: 0; display: grid; gap: 12px; border: 1px solid #eed8e2; border-radius: 14px; padding: 16px; }
+.attendance-student legend { color: #883052; font-weight: 700; padding: 0 6px; }
+.attendance-student label { display: grid; gap: 5px; font-size: 13px; font-weight: 600; }
+.attendance-student input, .attendance-student select { min-width: 0; width: 100%; min-height: 42px; border: 1px solid #eed8e2; border-radius: 10px; padding: 8px 10px; background: white; color: #3d2d37; }
+.attendance-student p { margin: 0; }
+.attendance-student form { display: grid; gap: 10px; }
 @media (max-width: 720px) {
   .app-shell { display: block; padding-bottom: 76px; }
   .sidebar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; width: auto; padding: 6px 8px max(6px, env(safe-area-inset-bottom)); border-right: 0; border-top: 1px solid #eed8e2; background: #fff9fb; }
@@ -88,4 +116,19 @@ h2 { margin: 0; }
   .empty-state { min-height: 320px; }
   .form-row { grid-template-columns: 1fr; }
   .session-card { align-items: start; flex-direction: column; }
+  .period-navigation { gap: 8px; }
+  .period-navigation strong { min-width: 0; flex: 1; font-size: 14px; }
+  .calendar-overview.week { grid-template-columns: 1fr; }
+  .calendar-overview.week .calendar-day { min-height: 68px; }
+  .calendar-overview.month { gap: 4px; }
+  .calendar-overview.month .calendar-day { min-height: 56px; align-items: center; padding: 5px 1px; gap: 3px; font-size: 12px; }
+  .calendar-overview.month .calendar-day.selected { padding: 4px 0; }
+  .calendar-overview.month .calendar-day-count { font-size: 10px; white-space: nowrap; }
+  .calendar-overview.month .calendar-day-preview { display: none; }
+  .month-agenda { display: grid; gap: 8px; margin-top: 24px; }
+  .month-agenda h2 { font-size: 17px; margin-bottom: 4px; }
+  .month-agenda button { display: grid; gap: 5px; text-align: left; padding: 13px 14px; border: 1px solid #eed8e2; border-radius: 14px; background: white; color: #3d2d37; }
+  .month-agenda button[aria-pressed="true"] { border-color: #a04368; background: #fff0f6; }
+  .month-agenda button span { color: #744e60; font-size: 13px; }
+  .calendar-weekday { font-size: 10px; padding: 3px 0; }
 }

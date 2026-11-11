@@ -13,7 +13,7 @@
 ## Trạng thái và quyền bắt đầu
 
 - Người dùng đã đồng ý bắt đầu triển khai ngày 10/11/2026. Các cổng duyệt sau mỗi phase vẫn áp dụng.
-- Đang có 1/20 task của giai đoạn 1–4 được nghiệm thu: `T-01.2`. Mã Auth, học sinh, lịch và hàm tính tiền đã có một phần; không làm lại từ đầu và không coi test đơn vị là nghiệm thu toàn luồng.
+- Cập nhật 11/11/2026: đã nghiệm thu 7/20 task của giai đoạn 1–4, toàn bộ `T-01.1`–`T-01.7`. Browser smoke thao tác ghi desktop/mobile và SQL/frontend test đã qua. Dừng trước phase 2 để người dùng duyệt; không coi hàm tính tiền thuần là chức năng giai đoạn 2 đã xong.
 - Sau khi người dùng đồng ý, bắt đầu **Phiên 1.1**. Cuối mỗi phase, gửi kết quả, lỗi còn lại và chờ người dùng đồng ý phase tiếp theo. Không tự chuyển phase. Giai đoạn 5 (phát hành) không nằm trong kế hoạch này.
 - Hai kế hoạch ngày 09/11/2026 vẫn là tài liệu tham khảo kỹ thuật; **tài liệu này quyết định thứ tự phiên và điểm dừng** sau khi được duyệt.
 - Chỉ đánh dấu `[x]` trong `TASKS.md` khi đạt tiêu chí của task và có bằng chứng trong `PROGRESS.md`. Nếu test bị công cụ chặn, ghi rõ là *chưa kiểm chứng*.

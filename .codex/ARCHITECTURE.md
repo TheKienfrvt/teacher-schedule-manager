@@ -1,6 +1,6 @@
 # ARCHITECTURE — Kiến trúc ứng dụng
 
-**Trạng thái:** Đề xuất kỹ thuật, chưa triển khai · **Nguồn nghiệp vụ:** [PRD.md](PRD.md) · **Kế hoạch nền:** [KE_HOACH_PHAT_TRIEN_APP_LICH_HOC_HOC_PHI.md](../KE_HOACH_PHAT_TRIEN_APP_LICH_HOC_HOC_PHI.md)
+**Trạng thái:** Định hướng kỹ thuật; nền giai đoạn 1 đã triển khai, các phần tài chính/xuất file chưa có · **Nguồn nghiệp vụ:** [PRD.md](PRD.md) · **Kế hoạch nền:** [KE_HOACH_PHAT_TRIEN_APP_LICH_HOC_HOC_PHI.md](../KE_HOACH_PHAT_TRIEN_APP_LICH_HOC_HOC_PHI.md)
 
 ## 1. Lựa chọn công nghệ
 
